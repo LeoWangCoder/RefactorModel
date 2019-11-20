@@ -9,9 +9,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 def main():
-    astPath ='/Users/mac/Downloads/refactortraindataset/MOVE_METHOD.txt'
-    labelPath = '/Users/mac/Downloads/refactortraindataset/MOVE_METHODLabel.txt'
-    with open (astPath, 'r') as f:
+    astPath = 'EXTRACT_METHOD.txt'
+    labelPath = 'EXTRACT_METHODLabel.txt'
+    dictionPath = 'dictionary.txt'
+    with open(dictionPath, 'r') as f:
+        dictionaryWords = f.read()
+    with open(astPath, 'r') as f:
         abstractCode = f.read()
     with open(labelPath, 'r') as f:
         labels = f.read()
@@ -22,44 +25,49 @@ def main():
     all_text = ' '.join(abstractCode_split)
     words = all_text.split(' ')
 
+    dictionaryWords = dictionaryWords.lower().replace(',', " ")
+    all_text_dictionary = ''.join([c for c in dictionaryWords if c not in punctuation])
+    dictionaryWords_split = all_text_dictionary.split('\n')
+    all_text_dictionary = ' '.join(dictionaryWords_split)
+    wordsForDic = all_text_dictionary.split(' ')
+
     # Build a dictionary that maps words to integers
 
-    counts = Counter(words)
+    counts = Counter(wordsForDic)
     vocab = sorted(counts, key=counts.get, reverse=True)
     vocab_to_int = {word: i for i, word in enumerate(vocab, 1)}
 
     # store the tokenized abstractCode in abstractCode_inits
     abstractCode_ints = []
-    for review in abstractCode_split:
-        abstractCode_ints.append([vocab_to_int[word] for word in review.split()])
+    for line in abstractCode_split:
+        abstractCode_ints.append([vocab_to_int[word] for word in line.split()])
 
     print('Unique words: ', len((vocab_to_int)))
     print()
 
-    # print tokens in first review
-    print('Tokenized review: \n', abstractCode_ints[:1])
+    # print tokens in first abstractCode
+    print('Tokenized abstractCode: \n', abstractCode_ints[:1])
 
     # 1= refactoring, 0=no refactoring label conversion
     labels_split = labels.split('\n')
     encoded_labels = np.array([1 if label == '1' else 0 for label in labels_split])
 
-    review_lens = Counter([len(x) for x in abstractCode_ints])
-    print("Zero-length abstractCode: {}".format(review_lens[0]))
-    print("Maximum review length: {}".format(max(review_lens)))
+    asbstractCode_lens = Counter([len(x) for x in abstractCode_ints])
+    print("Zero-length abstractCode: {}".format(asbstractCode_lens[0]))
+    print("Maximum abstractCode length: {}".format(max(asbstractCode_lens)))
 
     print('Number of abstractCode before removing error data: ', len(abstractCode_ints))
 
     ## remove any abstractCode/labels with zero length from the abstractCode_ints list.
 
     # get indices of any abstractCode with length 0
-    non_zero_idx = [i for i, review in enumerate(abstractCode_ints) if len(review) != 0]
+    non_zero_idx = [i for i, line in enumerate(abstractCode_ints) if len(line) != 0]
 
     # remove 0-length abstractCode and their labels
     abstractCode_ints = [abstractCode_ints[i] for i in non_zero_idx]
     encoded_labels = np.array([encoded_labels[i] for i in non_zero_idx])
 
     print('Number of abstractCode after removing error data: ', len(abstractCode_ints))
-
     #
     seq_length = 100
     features = pad_features(abstractCode_ints, seq_length=seq_length)
@@ -139,7 +147,7 @@ def main():
 
     # training params
 
-    epochs = 2
+    epochs = 6
 
     print_every = 10
     clip = 5  # gradient clipping
@@ -269,12 +277,12 @@ def main():
     print('%.4f' % (count/ len(lines)))
 
 
-def pad_features(reviews_ints, seq_length):
+def pad_features(abstractCode_inits, seq_length):
 
     # getting the correct rows x cols shape
-    features = np.zeros((len(reviews_ints), seq_length), dtype=int)
+    features = np.zeros((len(abstractCode_inits), seq_length), dtype=int)
 
-    for i, row in enumerate(reviews_ints):
+    for i, row in enumerate(abstractCode_inits):
         features[i, -len(row):] = np.array(row)[:seq_length]
 
     return features
@@ -298,7 +306,7 @@ def tokenize_abstractCode(test_abstractCode, vocab_to_int):
 def predict(net, test_abstractCode, vocab_to_int, sequence_length=100):
     net.eval()
 
-    # tokenize review
+    # tokenize abstractCode
     test_ints = tokenize_abstractCode(test_abstractCode, vocab_to_int)
 
     # pad tokenized sequence
