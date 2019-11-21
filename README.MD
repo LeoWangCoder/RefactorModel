@@ -4,8 +4,8 @@ Classification.py is the main program about data processing and train and test t
 
 Dictionary.txt is used to build the word to int dictionary. 
 
-The train data and test data is in the TrainAndTestData folder.
+The skewed data used to train,test,predict  is in the DataSkewRelated folder.
 
-The second test data is in the predictTestData folder
+The oversampling data used to train, test, predict is in the SimpleOversamplingData folder
 
 The analyzed picture results are in resutlAnalyze foler.
